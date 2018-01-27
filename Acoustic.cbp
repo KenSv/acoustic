@@ -33,8 +33,12 @@
 		</Compiler>
 		<Unit filename="include/Riq.h" />
 		<Unit filename="include/db.h" />
-		<Unit filename="src/Riq.cpp" />
-		<Unit filename="src/main.cpp" />
+		<Unit filename="src/Riq.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Extensions>
 			<envvars />
 			<code_completion />
