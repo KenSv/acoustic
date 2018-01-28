@@ -1,5 +1,9 @@
 #ifndef RIQ_H
 #define RIQ_H
+
+#include <stdbool.h>
+
+
 typedef unsigned char   _u8;
 typedef signed char     _s8;
 typedef short           _s16;
@@ -16,7 +20,7 @@ bool parseArray(_u8** buf, _u8** pRiq, float percent);
 void dumpArray(_u8** buf, unsigned int bytes, unsigned int items, unsigned short itemsOnLine);
 void dumpTimeStamp(_u8** buf, const char* msg);
 void fiterBlackman(_u8** buf, const double in[], double out[], int sizeIn);
-void fiterKalman(_u8* pIn, _f64* pOut, int block_size, float percent = 100);
-void filterSimple(_u8* pIn, _f64* pOut, int block_size, float percent = 100);
+void fiterKalman(_u8* pIn, _f64* pOut, int block_size, float percent);
+void filterSimple(_u8* pIn, _f64* pOut, int block_size, float percent);
 
 #endif // RIQ_H

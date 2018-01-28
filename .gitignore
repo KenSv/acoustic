@@ -37,3 +37,9 @@
 bin/*
 other/*
 Acoustic
+
+#other
+*.dat
+*.riq
+*.wav
+

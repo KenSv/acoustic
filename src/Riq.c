@@ -1,4 +1,4 @@
-#include <iostream>
+//#include <iostream>
 #include <math.h>
 #include <string.h>
 #include "../include/db.h"
@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 
-using namespace std;
+//using namespace std;
 //#define KALMAN
 
 #ifdef KALMAN
@@ -54,7 +54,7 @@ void filter(_u8* pIn, _f64* pOut, int block_size, float percent = 100)
 }
 #else
 // simple filter
-void filter(_u8* pIn, _f64* pOut, int block_size, float percent = 100)
+void filter(_u8* pIn, _f64* pOut, int block_size, float percent)
 {
 //    double dmax, kmax = 0;
     double ymax = 0, ymin = 10000000L, dmax = 0;
@@ -299,60 +299,6 @@ int wmin, wmax, pcur, wcur;
 //    free(pKoef);
 }
 #endif
-
-
-//static void from_log(_f64* ones, _s32 size)
-//{
-//    for (_s32 i = 0; i < size; i++)
-//        ones[i] = pow(10., ones[i] / 10.);
-//}
-//
-//static void to_log(_f64* ones, _s32 size)
-//{
-//    for (_s32 i = 0; i < size; i++)
-//        ones[i] = 10.*log10(ones[i]);
-//}
-
-void fiterBlackman(_u8** buf, const double in[], double out[], int sizeIn)
-{
-//    void Filter (const double in[], double out[], int sizeIn)
-    const int N = 20;           //Длина фильтра
-    double Fd   = 2000;      //Частота дискретизации входных данных
-    double Fs   = 20;        //Частота полосы пропускания
-    double Fx   = 50;        //Частота полосы затухания
-
-    double H[N]     = {0};    //Импульсная характеристика фильтра
-    double H_id[N]  = {0}; //Идеальная импульсная характеристика
-    double W[N]     = {0};    //Весовая функция
-
-    //Расчет импульсной характеристики фильтра
-    double Fc = (Fs + Fx) / (2 * Fd);
-
-    for (int i=0;i<N;i++)
-    {
-        if (i==0) H_id[i] = 2*M_PI*Fc;
-        else H_id[i] = sinl(2*M_PI*Fc*i )/(M_PI*i);
-        // весовая функция Блекмена
-        W [i] = 0.42 - 0.5 * cosl((2*M_PI*i) /( N-1)) + 0.08 * cosl((4*M_PI*i) /( N-1));
-        H [i] = H_id[i] * W[i];
-    }
-
-    //Нормировка импульсной характеристики
-    double SUM=0;
-    for (int i=0; i<N; i++) SUM +=H[i];
-    for (int i=0; i<N; i++) H[i]/=SUM; //сумма коэффициентов равна 1
-
-    //Фильтрация входных данных
-    for (int i=0; i<sizeIn; i++)
-    {
-        out[i]=0.;
-        for (int j=0; j<N-1; j++)// та самая формула фильтра
-        {
-            if(i-j>=0)
-            out[i]+= H[j]*in[i-j];
-        }
-    }
-}
 
 void dumpArray(_u8** buf, unsigned int bytes, unsigned int items, unsigned short itemsOnLine)
 {
@@ -1031,10 +977,9 @@ bool parseVar(_u8** buf, _u8** pRiq)
         dump_u8(buf, "конец файла");
         break;
     default:
-        unsigned int nb = (varType >> 24) & 0x0F;
+//        nb = (varType >> 24) & 0x0F;
         *buf += nb;
         printf("%16x\t - ?????\n", varType);
-        break;
     }
 
     return true;
