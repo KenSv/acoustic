@@ -32,8 +32,12 @@
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="include/Riq.h" />
+		<Unit filename="include/Vkf.h" />
 		<Unit filename="include/db.h" />
 		<Unit filename="src/Riq.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/Vkf.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src/main.c">

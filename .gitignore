@@ -37,6 +37,7 @@
 bin/*
 other/*
 Acoustic
+acoustic.cpp
 
 #other
 *.dat
