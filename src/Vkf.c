@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <malloc.h>
 #include <math.h>
 #include <stdio.h>
 #include <errno.h>
@@ -7,6 +8,7 @@
 
 int wav2array(char* fName)
 {
+    int res = 0;
     FILE *file, *fTmp, *fCorr;
     file = fopen(fName, "rb");
     if (!file)
@@ -39,22 +41,25 @@ int wav2array(char* fName)
     int records = (dataBytes >> 1) / sizeof(_s16);
     int samples = records << 1;
 //    _s16* pTmp = (_s16*) malloc(dataBytes / sizeof(_s16));
-    _u8* pTmp = (_u8*) malloc(dataBytes);
+    _s16* pTmp = (_s16*) malloc(samples * sizeof(_s16));
+//    _u8* pTmp = (_u8*) malloc(dataBytes);
+	_f64* pCorr = (_f64*)malloc(records*sizeof(_f64));
+	_s16* pIn1 = (_s16*)malloc(samples*sizeof(_s16));
+	_s16* pIn2 = (_s16*)malloc(samples*sizeof(_s16));
 
 //    int recs = fread(pTmp, sizeof(_s16), dataBytes, file);
     fread(pTmp, 1, dataBytes, file);
 
-	_s16* pIn1 = (_s16*)malloc(records*sizeof(_s16));
-	_s16* pIn2 = (_s16*)malloc(records*sizeof(_s16));
-	_f64* pCorr = (_f64*)malloc(records*sizeof(_f64));
     for (int i=0; i<samples; i++)
     {
         pIn1[i] = pTmp[i];
-        pIn2[i] = pTmp[i+1];
+        pIn2[i] = pTmp[i];
     }
-    if (!corrFunc(pIn1, pIn2, pCorr, records))
+
+    if (corrFunc(pIn1, pIn2, pCorr, records) != 0)
     {
         printf("Ошибка при расчете корреляционной функции !!!");
+        res = 1;
     };
 
     fwrite(pCorr, sizeof(_f64), records, fCorr);
@@ -64,37 +69,37 @@ int wav2array(char* fName)
     fclose(file);
     fclose(fCorr);
 
-    free(pTmp);
+    free(pIn2);
     free(pCorr);
     free(pIn1);
-    free(pIn2);
+    free(pTmp);
 
-    return 0;
+    return res;
 }
 
-int corrFunc(_s16* in1, _s16* in2, _f64* corr, int records)
+int corrFunc(_s16* in, _s16* etalon, _f64* corr, int records)
 {
     printf("Обрабатываемое число точек: %d\n", records);
+    int et_start = records/2, et_count = 1000;
 //    _s16 p1, p2;
 //    _f64 c;
-    for (int n=0; n<records/2; n++)
+    for (int n=0; n<records; n++)
     {
-        corr[n] = 0;
-//        printf("Цикл: %d\n", n);
-        for(int i=0; i<records; i++)
+        corr[n] = 0.0;
+        for(int i = 0; i < et_count; i++)
         {
             if (i+n < records)
             {
-//                p1 = in1[i];
-//                p2 = in2[i];
-                corr[n] += sqrt(in1[i] * in2[i+n]);
+//                p1 = in[i];
+//                p2 = etalon[i];
+                corr[n] += sqrt(in[n+i] * etalon[i+et_start]);
 //                c = corr[n];
             }
             else
                 break;
         }
-        printf("%16lf\t", corr[n]);
-        if (n % 8 == 0) printf("\n");
+//        printf("%16.2f\t", corr[n]);
+//        if (n % 8 == 0) printf("\n");
     }
     return 0;
 }
