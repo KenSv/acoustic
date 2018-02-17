@@ -3,9 +3,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <errno.h>
-#include <assert.h>
 #include "../include/Vkf.h"
 #include "../include/Riq.h"
+
+//#define NDEBUG // расскомментировать для отключения отладки
+#include <assert.h>
 
 int readWav(char* fName, char* wavData)
 {
@@ -51,31 +53,56 @@ int readWav(char* fName, char* wavData)
     }
 }
 
+// вычисление взаимной корреляционной функции
+// pSample - указатель на образцовую выборку
+// countSample - число записей в образцовой выборке
+// pFrag - указатель на исследуемую выборку
+// countFrag - число записей в исследуемой выборке
 int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
 {
     _s16* pS;
     _s16* pF;
     int res = 0;
 
+    assert(countSample >0);
+    assert(countFrag >0);
+
     int cntS = countSample / sizeof(_s16);
     int cntF = countFrag / sizeof(_s16);
+    assert(cntF >0);
+    assert(cntS >0);
 
     pS = (_s16*) pSample;
     pF = (_s16*) pFrag;
     int max_rec = cntF > cntS ? cntF : cntS;
-    printf("max_recs: %10d\n", max_rec);
-    assert(cntF >0);
-    assert(cntS >0);
 
+    if (cntS >= cntF)
+    {
+        printf("Число точек в исследуемой выборке должно быть больше искомого образца!");
+        return 1;
+    }
 
     _f64* pCorr = (_f64*)malloc(max_rec*sizeof(_f64));
-//    if (corrFunc(pS, pF, pCorr, max_rec) != 0)
-//    {
-//        printf("Ошибка при расчете корреляционной функции !!!");
-//        res = 1;
-//    };
-    free(pCorr);
+    printf("Число точек исследуемой выборки: %d\tобразца: %d\n", cntF, cntS);
 
+    for (int n=0; n<cntF; n++)
+    {
+        pCorr[n] = 0.0;
+        for(int i = 0; i < cntS/10; i+=10)
+        {
+            if (i+n < cntF)
+            {
+                pCorr[n] += fabs(pF[n+i] * pS[i]);
+            } else
+                break;
+        }
+    }
+
+FILE *fCorr;
+fCorr = fopen("icf.dat", "w");
+fwrite(pCorr, sizeof(_f64), cntF, fCorr);
+    fclose(fCorr);
+    free(pCorr);
     return res;
 }
 
