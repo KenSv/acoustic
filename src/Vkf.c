@@ -4,6 +4,35 @@
 #include <errno.h>
 #include "../include/Vkf.h"
 
+int readWav(char* fName, char* wavData)
+{
+    FILE *file;
+
+    file = fopen(fName, "rb");
+    if (!file)
+    {
+        printf("Failed open file, error %d", errno);
+        return 1;
+    }
+
+    WAVHEADER header;
+
+    fread(&header, sizeof(WAVHEADER), 1, file);
+
+    // Выводим полученные данные
+    printf("Sample rate: %d\n", header.sampleRate);
+    printf("Channels: %d\n", header.numChannels);
+    printf("Bits per sample: %d\n", header.bitsPerSample);
+    printf("ChunkSize: %d\n", header.subchunk2Size);
+
+//    int len = header.bitsPerSample >> 3;
+    wavData = (char*) malloc(header.subchunk2Size);
+    fread(wavData, 1, header.subchunk2Size, file);
+
+    return 0;
+}
+
+
 int wav2array(char* fName, double* pOut)
 {
     FILE *file, *fTmp;
