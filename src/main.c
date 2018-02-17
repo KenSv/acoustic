@@ -16,18 +16,19 @@
 
 int main(int argc, char* argv[])
 {
-    float percent = 100;
+//    float percent = 100;
     char dirName[1000];
-    long int length;
-    FILE *fRiq, *fIn, *fOut;
-    _u8 *buf, *pRiq;
-    char fname[30];
+//    long int length;
+//    FILE *fRiq, *fIn, *fOut;
+//    _u8 *buf, *pRiq;
+    char fname[30], f_frag[30];
 
     printf("Current path: %s\n", getcwd(dirName, sizeof(dirName)));
     switch (argc)
     {
         case 3:
-            percent = atof(argv[2]);
+//            percent = atof(argv[2]);
+            strcpy(f_frag, argv[1]);
         case 2:
             strcpy(fname, argv[1]);
             break;
@@ -38,43 +39,43 @@ int main(int argc, char* argv[])
     printf("File name: %s\n", fname);
 
 
-    fIn = fopen(fname, "rb");
+//    fIn = fopen(fname, "rb");
+//
+//    fOut = fopen("origin.riq", "wb");
+//    fseek(fIn, 0L, SEEK_END);
+//    length = ftell(fIn);
+//
+//    printf("File length: %li\n", length);
+//    printf("===========================================\n");
+//    printf("  Адрес |\tЗначение\tОписание\n");
+//    printf("===========================================\n");
+//
+//    buf = (_u8*) malloc(sizeof(_u8)*length);
 
-    fOut = fopen("origin.riq", "wb");
-    fseek(fIn, 0L, SEEK_END);
-    length = ftell(fIn);
+//    _f64* os = (_f64*) malloc(sizeof(_f64)*10000);
+    wav2array(fname);
+//    free(os);
 
-    printf("File length: %li\n", length);
-    printf("===========================================\n");
-    printf("  Адрес |\tЗначение\tОписание\n");
-    printf("===========================================\n");
-
-    buf = (_u8*) malloc(sizeof(_u8)*length);
-
-    double* os = (double*) malloc(sizeof(double)*10000);
-    wav2array(fname, os);
-    free(os);
-
-        rewind(fIn);
-        fread((char *) buf, sizeof(char), length, fIn);
-        pRiq = (_u8*) malloc(sizeof(_u8)*length);
-        _u8* readPtr = buf;
-        _u8* writePtr = pRiq;
-
-        fRiq = fopen("filtered.riq", "wb");
-        while(readPtr < &buf[length]) {
-            printf("%8x ", (unsigned int) (readPtr - buf));
-            if(!parseVar(&readPtr, &writePtr))
-                parseArray(&readPtr, &writePtr, percent);
-        }
-        fwrite(buf, sizeof(_u8), length, fOut);
-        fwrite(pRiq, sizeof(_u8), length, fRiq);
-
-        fclose(fIn);
-        fclose(fOut);
-        fclose(fRiq);
-        free(buf);
-        free(pRiq);
+//        rewind(fIn);
+//        fread((char *) buf, sizeof(char), length, fIn);
+//        pRiq = (_u8*) malloc(sizeof(_u8)*length);
+//        _u8* readPtr = buf;
+//        _u8* writePtr = pRiq;
+//
+//        fRiq = fopen("filtered.riq", "wb");
+//        while(readPtr < &buf[length]) {
+//            printf("%8x ", (unsigned int) (readPtr - buf));
+//            if(!parseVar(&readPtr, &writePtr))
+//                parseArray(&readPtr, &writePtr, percent);
+//        }
+//        fwrite(buf, sizeof(_u8), length, fOut);
+//        fwrite(pRiq, sizeof(_u8), length, fRiq);
+//
+//        fclose(fIn);
+//        fclose(fOut);
+//        fclose(fRiq);
+//        free(buf);
+//        free(pRiq);
    exit(0);
 }
 

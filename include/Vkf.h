@@ -1,3 +1,4 @@
+#include "Riq.h"
 #ifndef VKF_H_INCLUDED
 #define VKF_H_INCLUDED
 
@@ -65,6 +66,8 @@ typedef struct
     // Далее следуют непосредственно Wav данные.
 } WAVHEADER;
 
-int wav2array(char* fName, double* pOut);
+//int wav2array(char* fName, double* pOut);
+int wav2array(char* fName);
+int corrFunc(_s16* in1, _s16* in2, _f64* corr, int records);
 
 #endif // VKF_H_INCLUDED
