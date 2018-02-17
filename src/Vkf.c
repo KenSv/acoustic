@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <errno.h>
+#include <assert.h>
 #include "../include/Vkf.h"
 #include "../include/Riq.h"
 
@@ -14,8 +15,9 @@ int readWav(char* fName, char* wavData)
     if (!file)
     {
         printf("Failed open file, error %d", errno);
-        return 1;
+        return -1;
     }
+    printf("File name: %s\n", fName);
 
     WAVHEADER header;
 
@@ -26,14 +28,56 @@ int readWav(char* fName, char* wavData)
     printf("Channels: %d\n", header.numChannels);
     printf("Bits per sample: %d\n", header.bitsPerSample);
     printf("ChunkSize: %d\n", header.subchunk2Size);
+    printf("==============================================\n\n");
 
-//    int len = header.bitsPerSample >> 3;
-    wavData = (char*) malloc(header.subchunk2Size);
-    fread(wavData, 1, header.subchunk2Size, file);
-
-    return 0;
+//    short len = header.bitsPerSample >> 3;
+    if (header.numChannels > 1)
+    {
+        char* pTmp = (char*) malloc(header.subchunk2Size*sizeof(char));
+        wavData = realloc(wavData, header.subchunk2Size/header.numChannels);
+        int cnt = fread(pTmp, 1, header.subchunk2Size, file);
+        for (int n=0; n<header.subchunk2Size/header.numChannels; n+=2)
+        {
+            wavData[n] = pTmp[n*header.numChannels];
+            wavData[n+1] = pTmp[n*header.numChannels+1];
+        }
+        free(pTmp);
+        return cnt/header.numChannels;
+    }
+    else
+    {
+        wavData = realloc(wavData, header.subchunk2Size);
+        return fread(wavData, 1, header.subchunk2Size, file);
+    }
 }
 
+int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
+{
+    _s16* pS;
+    _s16* pF;
+    int res = 0;
+
+    int cntS = countSample / sizeof(_s16);
+    int cntF = countFrag / sizeof(_s16);
+
+    pS = (_s16*) pSample;
+    pF = (_s16*) pFrag;
+    int max_rec = cntF > cntS ? cntF : cntS;
+    printf("max_recs: %10d\n", max_rec);
+    assert(cntF >0);
+    assert(cntS >0);
+
+
+    _f64* pCorr = (_f64*)malloc(max_rec*sizeof(_f64));
+//    if (corrFunc(pS, pF, pCorr, max_rec) != 0)
+//    {
+//        printf("Ошибка при расчете корреляционной функции !!!");
+//        res = 1;
+//    };
+    free(pCorr);
+
+    return res;
+}
 
 int wav2array(char* fName)
 {
