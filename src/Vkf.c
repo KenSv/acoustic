@@ -6,12 +6,13 @@
 #include "../include/Vkf.h"
 #include "../include/Riq.h"
 
-//#define NDEBUG // расскомментировать для отключения отладки
+#define NDEBUG // расскомментировать для отключения отладки
 #include <assert.h>
 
 int readWav(char* fName, char* wavData)
 {
     FILE *file;
+    int n;
 
     printf("%s\n", fName);
     file = fopen(fName, "rb");
@@ -75,7 +76,7 @@ int readWav(char* fName, char* wavData)
         char* pTmp = (char*) malloc(dataHeader.subchunk2Size*sizeof(char));
         wavData = realloc(wavData, dataHeader.subchunk2Size/header.numChannels);
         int cnt = fread(pTmp, 1, dataHeader.subchunk2Size, file);
-        for (int n=0; n<dataHeader.subchunk2Size/header.numChannels; n+=2)
+        for (n=0; n<dataHeader.subchunk2Size/header.numChannels; n+=2)
         {
             wavData[n] = pTmp[n*header.numChannels];
             wavData[n+1] = pTmp[n*header.numChannels+1];
@@ -100,6 +101,7 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
     _s16* pS;
     _s16* pF;
     int res = 0;
+    int i, n;
 
     assert(countSample >0);
     assert(countFrag >0);
@@ -122,10 +124,10 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
     _f64* pCorr = (_f64*)malloc(max_rec*sizeof(_f64));
     printf("Число точек исследуемой выборки: %d\tобразца: %d\n", cntF, cntS);
 
-    for (int n=0; n<cntF; n++)
+    for (n=0; n<cntF; n++)
     {
         pCorr[n] = 0.0;
-        for(int i = 0; i < cntS/10; i+=10)
+        for(i = 0; i < cntS/10; i+=10)
         {
             if (i+n < cntF)
             {
@@ -216,14 +218,15 @@ fwrite(pCorr, sizeof(_f64), cntF, fCorr);
 
 int corrFunc(_s16* in, _s16* etalon, _f64* corr, int records)
 {
+    int i, n;
     printf("Обрабатываемое число точек: %d\n", records);
     int et_start = records/2, et_count = 1000;
 //    _s16 p1, p2;
 //    _f64 c;
-    for (int n=0; n<records; n++)
+    for (n=0; n<records; n++)
     {
         corr[n] = 0.0;
-        for(int i = 0; i < et_count; i++)
+        for(i = 0; i < et_count; i++)
         {
             if (i+n < records)
             {
@@ -242,36 +245,36 @@ int corrFunc(_s16* in, _s16* etalon, _f64* corr, int records)
 }
 
 
-double maxCorrelation(double* a, double* b, int N){
-	double* AR = (double*)malloc(N*sizeof(double));
-//	double* AI = (double*)malloc(N*sizeof(double));
-	double* BR = (double*)malloc(N*sizeof(double));
-//	double* BI = (double*)malloc(N*sizeof(double));
-	double* c = (double*)malloc(N*sizeof(double));
-//	fft.fft(a,AR,AI,N);
-//	fft.fft(b,BR,BI,N);
-	double CR;//, CI;
-
-	for(int i = 0; i<N; i++){
-		CR = AR[i]*BR[i]; //+AI[i]*BI[i];
-//		CI = AI[i]*BR[i]-AR[i]*BI[i];
-		AR[i] = CR;
-//		AI[i] = CI;
-	}
-//	fft.real_ifft(AR,AI,c,N);
-	double Ea = 0.0, Eb = 0.0;;
-	for(int i = 0; i<N; i++){
-		Ea += a[i]*a[i];
-		Eb += b[i]*b[i];
-	}
-	double E = sqrt(Ea*Eb);
-	double mc = c[0]/E;
-	for(int i = 0; i<N; i++)
-		mc = fmax(mc, c[i]/E);
-	free(AR);
-//	free(AI);
-	free(BR);
-//	free(BI);
-	free(c);
-	return mc;
-}
+//double maxCorrelation(double* a, double* b, int N){
+//	double* AR = (double*)malloc(N*sizeof(double));
+////	double* AI = (double*)malloc(N*sizeof(double));
+//	double* BR = (double*)malloc(N*sizeof(double));
+////	double* BI = (double*)malloc(N*sizeof(double));
+//	double* c = (double*)malloc(N*sizeof(double));
+////	fft.fft(a,AR,AI,N);
+////	fft.fft(b,BR,BI,N);
+//	double CR;//, CI;
+//
+//	for(int i = 0; i<N; i++){
+//		CR = AR[i]*BR[i]; //+AI[i]*BI[i];
+////		CI = AI[i]*BR[i]-AR[i]*BI[i];
+//		AR[i] = CR;
+////		AI[i] = CI;
+//	}
+////	fft.real_ifft(AR,AI,c,N);
+//	double Ea = 0.0, Eb = 0.0;;
+//	for(int i = 0; i<N; i++){
+//		Ea += a[i]*a[i];
+//		Eb += b[i]*b[i];
+//	}
+//	double E = sqrt(Ea*Eb);
+//	double mc = c[0]/E;
+//	for(int i = 0; i<N; i++)
+//		mc = fmax(mc, c[i]/E);
+//	free(AR);
+////	free(AI);
+//	free(BR);
+////	free(BI);
+//	free(c);
+//	return mc;
+//}

@@ -29,7 +29,7 @@ void filter(_u8* pIn, _f64* pOut, int block_size, float percent = 100)
     double state;
     double covariance;
     double K;
-    int i;
+    int i, n;
 
     // Задаем начальные значение state и covariance
     state = pOut[0];
@@ -62,7 +62,7 @@ void filter(_u8* pIn, _f64* pOut, int block_size, float percent)
     double delta = 0;
     double gain = 1;
     double offset = 0;
-    int i;
+    int i, n;
 //    _f64* pKoef;
 
 //    pKoef   = (_f64*) malloc(block_size * sizeof(_f64));
@@ -174,7 +174,7 @@ int wmin, wmax, pcur, wcur;
     {
 //        frame_sum = frame_sum - pOut[i-1] + pOut[i+frame_size-1];
         frame_sum = 0;
-        for (int n = i; n < i+frame_size; n++) frame_sum += pOut[n];
+        for (n = i; n < i+frame_size; n++) frame_sum += pOut[n];
         pTmp[i+frame_shift] = frame_sum / frame_size;
     }
     // дописываем необработанные участки в начале и в конце последовательности
@@ -197,7 +197,7 @@ int wmin, wmax, pcur, wcur;
         if (pTmp[i] > treshold)
         {
             frame_sum = 0;
-            for (int n = 0; n < frame_size; n++) frame_sum += pOut[i+n-frame_shift-1];
+            for (n = 0; n < frame_size; n++) frame_sum += pOut[i+n-frame_shift-1];
             pTmp[i-2] = frame_sum / frame_size;
         }
     }
@@ -302,7 +302,8 @@ int wmin, wmax, pcur, wcur;
 
 void dumpArray(_u8** buf, unsigned int bytes, unsigned int items, unsigned short itemsOnLine)
 {
-    for (unsigned int i=0; i < items; i++)
+    unsigned int i;
+    for (i=0; i < items; i++)
     {
         switch (bytes)
         {
@@ -399,6 +400,7 @@ void dumpHex8(_u8** buf, const char* msg)
 
 bool parseArray(_u8** buf, _u8** pRiq, float percent)
 {
+    unsigned int i;
     unsigned int varType = *((int *) *buf);
     unsigned int nb = (varType >> 24) & 0x0F;
     *buf += 4;
@@ -433,7 +435,7 @@ bool parseArray(_u8** buf, _u8** pRiq, float percent)
         break;
     case DBI_FFT_U8:
         filter(*buf, ptrOut, arItems, percent);
-        for (unsigned int i=0; i < arItems; i++)
+        for (i=0; i < arItems; i++)
         {
            (*pRiq)[i] = (_u8)((unsigned int) ptrOut[i]);
 //           (*pRiq)[i] = (_u8) ptrOut[i];
