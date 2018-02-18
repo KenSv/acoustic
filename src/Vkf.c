@@ -13,32 +13,69 @@ int readWav(char* fName, char* wavData)
 {
     FILE *file;
 
+    printf("%s\n", fName);
     file = fopen(fName, "rb");
     if (!file)
     {
         printf("Failed open file, error %d", errno);
         return -1;
     }
-    printf("File name: %s\n", fName);
 
     WAVHEADER header;
+    WAV_DATA_HEADER dataHeader;
 
     fread(&header, sizeof(WAVHEADER), 1, file);
+//    if (header.subchunk1Size > 0x10){
+//        int extraLen = header.subchunk1Size - 0x10;
+//        char* extraFmt = (char*) malloc(extraLen);
+//
+//        fread(extraFmt, 1, extraLen, file);
+//        for (int i=0; i<extraLen; i++)
+//            printf("%x\t", extraFmt[i]);
+//        free(extraFmt);
+//    }
+//    fread(&dataHeader, sizeof(WAV_DATA_HEADER), 1, file);
+    short t;
+    fread(&t, sizeof(short), 1, file);
+    if (t != 0x6164){
+        printf("Ошибка в заголовке файла!!! Попытка поиска блока данных...\n");
+        int cnt = 0;
+        int chunkId;
+        fread(&chunkId, sizeof(int), 1, file);
+        while (chunkId != DataID && cnt <255) {
+            fread(&chunkId, sizeof(int), 1, file);
+//            printf("%x\n", chunkId);
+            cnt++;
+        }
+        if (cnt == 255)
+            return -1;
+        else {
+            fseek(file, -sizeof(int), SEEK_CUR);
+            fread(&dataHeader, sizeof(WAV_DATA_HEADER), 1, file);
+        }
+    } else {
+        fseek(file, -sizeof(short), SEEK_CUR);
+        fread(&dataHeader, sizeof(WAV_DATA_HEADER), 1, file);
+    }
+
 
     // Выводим полученные данные
-    printf("Sample rate: %d\n", header.sampleRate);
-    printf("Channels: %d\n", header.numChannels);
-    printf("Bits per sample: %d\n", header.bitsPerSample);
-    printf("ChunkSize: %d\n", header.subchunk2Size);
+    printf("subchunk1Size: %d\n", header.subchunk1Size);
+    printf("subchunk2Id: %s\n", dataHeader.subchunk2Id);
+
+    printf("Битрейт: %d\n", header.sampleRate);
+    printf("Число каналов: %d\n", header.numChannels);
+    printf("Число бит в одном значении: %d\n", header.bitsPerSample);
+    printf("Размер блока данных (байт): %d\n", dataHeader.subchunk2Size);
     printf("==============================================\n\n");
 
 //    short len = header.bitsPerSample >> 3;
     if (header.numChannels > 1)
     {
-        char* pTmp = (char*) malloc(header.subchunk2Size*sizeof(char));
-        wavData = realloc(wavData, header.subchunk2Size/header.numChannels);
-        int cnt = fread(pTmp, 1, header.subchunk2Size, file);
-        for (int n=0; n<header.subchunk2Size/header.numChannels; n+=2)
+        char* pTmp = (char*) malloc(dataHeader.subchunk2Size*sizeof(char));
+        wavData = realloc(wavData, dataHeader.subchunk2Size/header.numChannels);
+        int cnt = fread(pTmp, 1, dataHeader.subchunk2Size, file);
+        for (int n=0; n<dataHeader.subchunk2Size/header.numChannels; n+=2)
         {
             wavData[n] = pTmp[n*header.numChannels];
             wavData[n+1] = pTmp[n*header.numChannels+1];
@@ -48,8 +85,8 @@ int readWav(char* fName, char* wavData)
     }
     else
     {
-        wavData = realloc(wavData, header.subchunk2Size);
-        return fread(wavData, 1, header.subchunk2Size, file);
+        wavData = realloc(wavData, dataHeader.subchunk2Size);
+        return fread(wavData, 1, dataHeader.subchunk2Size, file);
     }
 }
 
@@ -78,7 +115,7 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
 
     if (cntS >= cntF)
     {
-        printf("Число точек в исследуемой выборке должно быть больше искомого образца!");
+        printf("Число точек в исследуемой выборке должно быть больше искомого образца!\n");
         return 1;
     }
 
@@ -106,76 +143,76 @@ fwrite(pCorr, sizeof(_f64), cntF, fCorr);
     return res;
 }
 
-int wav2array(char* fName)
-{
-    int res = 0;
-    FILE *file, *fTmp, *fCorr;
-    file = fopen(fName, "rb");
-    if (!file)
-    {
-        printf("Failed open file, error %d", errno);
-        return 1;
-    }
-
-    WAVHEADER header;
-
-    fread(&header, sizeof(WAVHEADER), 1, file);
-
-    // Выводим полученные данные
-    printf("Sample rate: %d\n", header.sampleRate);
-    printf("Channels: %d\n", header.numChannels);
-    printf("Bits per sample: %d\n", header.bitsPerSample);
-    printf("ChunkSize: %d\n", header.subchunk2Size);
-
-    // Посчитаем длительность воспроизведения в секундах
-//    float fDurationSeconds = 1.f * header.subchunk2Size / (header.bitsPerSample / 8) / header.numChannels / header.sampleRate;
-//    int iDurationMinutes = (int)floor(fDurationSeconds) / 60;
-//    fDurationSeconds = fDurationSeconds - (iDurationMinutes * 60);
-//    printf("Duration: %02d:%02.f\n", iDurationMinutes, fDurationSeconds);
-
-//    int len = header.bitsPerSample >> 3;
-    fTmp = fopen("wavdata.dat", "w");
-    fCorr = fopen("icf.dat", "w");
-
-    int dataBytes = header.subchunk2Size;
-    int records = (dataBytes >> 1) / sizeof(_s16);
-    int samples = records << 1;
-//    _s16* pTmp = (_s16*) malloc(dataBytes / sizeof(_s16));
-    _s16* pTmp = (_s16*) malloc(samples * sizeof(_s16));
-//    _u8* pTmp = (_u8*) malloc(dataBytes);
-	_f64* pCorr = (_f64*)malloc(records*sizeof(_f64));
-	_s16* pIn1 = (_s16*)malloc(samples*sizeof(_s16));
-	_s16* pIn2 = (_s16*)malloc(samples*sizeof(_s16));
-
-//    int recs = fread(pTmp, sizeof(_s16), dataBytes, file);
-    fread(pTmp, 1, dataBytes, file);
-
-    for (int i=0; i<samples; i++)
-    {
-        pIn1[i] = pTmp[i];
-        pIn2[i] = pTmp[i];
-    }
-
-    if (corrFunc(pIn1, pIn2, pCorr, records) != 0)
-    {
-        printf("Ошибка при расчете корреляционной функции !!!");
-        res = 1;
-    };
-
-    fwrite(pCorr, sizeof(_f64), records, fCorr);
-    fwrite(pTmp, 1, dataBytes, fTmp);
-
-    fclose(fTmp);
-    fclose(file);
-    fclose(fCorr);
-
-    free(pIn2);
-    free(pCorr);
-    free(pIn1);
-    free(pTmp);
-
-    return res;
-}
+//int wav2array(char* fName)
+//{
+//    int res = 0;
+//    FILE *file, *fTmp, *fCorr;
+//    file = fopen(fName, "rb");
+//    if (!file)
+//    {
+//        printf("Failed open file, error %d", errno);
+//        return 1;
+//    }
+//
+//    WAVHEADER header;
+//
+//    fread(&header, sizeof(WAVHEADER), 1, file);
+//
+//    // Выводим полученные данные
+//    printf("Sample rate: %d\n", header.sampleRate);
+//    printf("Channels: %d\n", header.numChannels);
+//    printf("Bits per sample: %d\n", header.bitsPerSample);
+////    printf("ChunkSize: %d\n", dataHeader.subchunk2Size);
+//
+//    // Посчитаем длительность воспроизведения в секундах
+////    float fDurationSeconds = 1.f * header.subchunk2Size / (header.bitsPerSample / 8) / header.numChannels / header.sampleRate;
+////    int iDurationMinutes = (int)floor(fDurationSeconds) / 60;
+////    fDurationSeconds = fDurationSeconds - (iDurationMinutes * 60);
+////    printf("Duration: %02d:%02.f\n", iDurationMinutes, fDurationSeconds);
+//
+////    int len = header.bitsPerSample >> 3;
+//    fTmp = fopen("wavdata.dat", "w");
+//    fCorr = fopen("icf.dat", "w");
+//
+//    int dataBytes = header.subchunk2Size;
+//    int records = (dataBytes >> 1) / sizeof(_s16);
+//    int samples = records << 1;
+////    _s16* pTmp = (_s16*) malloc(dataBytes / sizeof(_s16));
+//    _s16* pTmp = (_s16*) malloc(samples * sizeof(_s16));
+////    _u8* pTmp = (_u8*) malloc(dataBytes);
+//	_f64* pCorr = (_f64*)malloc(records*sizeof(_f64));
+//	_s16* pIn1 = (_s16*)malloc(samples*sizeof(_s16));
+//	_s16* pIn2 = (_s16*)malloc(samples*sizeof(_s16));
+//
+////    int recs = fread(pTmp, sizeof(_s16), dataBytes, file);
+//    fread(pTmp, 1, dataBytes, file);
+//
+//    for (int i=0; i<samples; i++)
+//    {
+//        pIn1[i] = pTmp[i];
+//        pIn2[i] = pTmp[i];
+//    }
+//
+//    if (corrFunc(pIn1, pIn2, pCorr, records) != 0)
+//    {
+//        printf("Ошибка при расчете корреляционной функции !!!");
+//        res = 1;
+//    };
+//
+//    fwrite(pCorr, sizeof(_f64), records, fCorr);
+//    fwrite(pTmp, 1, dataBytes, fTmp);
+//
+//    fclose(fTmp);
+//    fclose(file);
+//    fclose(fCorr);
+//
+//    free(pIn2);
+//    free(pCorr);
+//    free(pIn1);
+//    free(pTmp);
+//
+//    return res;
+//}
 
 int corrFunc(_s16* in, _s16* etalon, _f64* corr, int records)
 {

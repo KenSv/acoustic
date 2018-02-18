@@ -14,15 +14,17 @@ int main(int argc, char* argv[])
     int res = 0;
     double start = clock(), end;
     char dirName[1000];
-    char f_sample[30], f_frag[30];
+    char f_sample[255];
+    char f_frag[255];
     char* pSample;   // область данных образца
     char* pFrag;     // область данных иследуемого фрагмента
     int cntSample = -1, cntFrag = -1;
 
-    pSample = (char*) malloc(2000000);
-    pFrag = (char*) malloc(2000000);
+    pSample = (char*) malloc(20000000);
+    pFrag = (char*) malloc(20000000);
 
     printf("Current path: %s\n", getcwd(dirName, sizeof(dirName)));
+
     switch (argc)
     {
         case 3:
@@ -36,14 +38,15 @@ int main(int argc, char* argv[])
             break;
     }
 
-    printf("Файл образца\n");
+    printf("Файл образца: ");
     cntSample = readWav((char*) &f_sample, pSample);
     if (cntSample <= 0)
     {
         printf("Ошибка открытия файла образца\n");
         res = -1;
     }
-    printf("Исследуемый файл\n");
+    printf("Исследуемый файл: ");
+    printf("%s\n", f_frag);
     cntFrag = readWav((char*) &f_frag, pFrag);
     if (cntFrag <= 0)
     {

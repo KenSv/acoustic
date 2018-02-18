@@ -53,6 +53,12 @@ typedef struct
     // Так называемая "глубиная" или точность звучания. 8 бит, 16 бит и т.д.
     unsigned short bitsPerSample;
 
+} WAVHEADER;
+
+#define DataID 			0x61746164
+
+typedef struct
+{
     // Подцепочка "data" содержит аудио-данные и их размер.
 
     // Содержит символы "data"
@@ -64,12 +70,13 @@ typedef struct
     unsigned int subchunk2Size;
 
     // Далее следуют непосредственно Wav данные.
-} WAVHEADER;
+} WAV_DATA_HEADER;
+
 
 //int wav2array(char* fName, double* pOut);
 int readWav(char* fName, char* wavData);
 int getVKF(char* pSample, int countSample, char* pFrag, int countFrag);
-int wav2array(char* fName);
+//int wav2array(char* fName);
 int corrFunc(_s16* in1, _s16* in2, _f64* corr, int records);
 
 #endif // VKF_H_INCLUDED
