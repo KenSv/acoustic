@@ -102,6 +102,10 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
     _s16* pF;
     int res = 0;
     int i, n;
+    // максимумы образца и исследуемого сигналов для нормирования образца
+    _s16 maxS = 0, maxF = 0;
+    // нормирующий коээфициент
+    _f64 norm;
 
     assert(countSample >0);
     assert(countFrag >0);
@@ -117,31 +121,57 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
 
     if (cntS >= cntF)
     {
-        printf("Число точек в исследуемой выборке должно быть больше искомого образца!\n");
+        printf("Число точек в исследуемой выборке должно быть больше чем в образце!\n");
         return 1;
     }
 
     _f64* pCorr = (_f64*)malloc(max_rec*sizeof(_f64));
     printf("Число точек исследуемой выборки: %d\tобразца: %d\n", cntF, cntS);
 
+// вычисление нормирующего коэффициента
+    for (i=0; i< cntS; i++)
+        if (maxS < fabs(pSample[i])) maxS = fabs(pSample[i]);
+    for (i=0; i< cntF; i++)
+        if (maxF < fabs(pFrag[i])) maxF = fabs(pFrag[i]);
+    norm = maxS/maxF;
+
+ // вычисление корреляционной функции
     for (n=0; n<cntF; n++)
     {
         pCorr[n] = 0.0;
-        for(i = 0; i < cntS/10; i+=10)
+        for(i = 0; i < cntS/10; i+=100)
         {
             if (i+n < cntF)
             {
-                pCorr[n] += fabs(pF[n+i] * pS[i]);
+                pCorr[n] += fabs(norm * pF[n+i] * pS[i]);
             } else
                 break;
         }
     }
 
-FILE *fCorr;
-fCorr = fopen("icf.dat", "w");
-fwrite(pCorr, sizeof(_f64), cntF, fCorr);
+    // фильтрация
+    _f64* pFiltered = (_f64*) malloc(sizeof(_f64)*cntF);
+    short window = 100;
+    _f64 sum = 0;
+    for (i=0; i<window; i++)
+    {
+        sum += pCorr[i];
+        pFiltered[i] = sum / (i + 1);
+    }
+    for (i=window; i<cntF; i++)
+    {
+        sum = sum + pCorr[i] - pCorr[i-window];
+        pFiltered[i] = sum / window;
+    }
+
+// запись ВКФ в файл !!! ВРЕМЕННО !!! для визуального анализа
+    FILE *fCorr;
+    fCorr = fopen("icf.dat", "w");
+    //fwrite(pCorr, sizeof(_f64), cntF, fCorr);
+    fwrite(pFiltered, sizeof(_f64), cntF, fCorr);
     fclose(fCorr);
     free(pCorr);
+    free(pFiltered);
     return res;
 }
 
