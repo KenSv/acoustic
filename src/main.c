@@ -54,8 +54,9 @@ int main(int argc, char* argv[])
         res = -2;
     }
     // собственно подсчет ВКФ
-    getVKF(pSample, cntSample, pFrag, cntFrag);
-
+    _s16 result = 0;
+    getVKF(pSample, cntSample, pFrag, cntFrag, &result);
+    printf("процент сходства: %i%% \n", result);
 //    wav2array(f_sample);
 
     free(pSample);

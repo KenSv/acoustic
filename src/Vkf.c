@@ -96,16 +96,22 @@ int readWav(char* fName, char* wavData)
 // countSample - число записей в образцовой выборке
 // pFrag - указатель на исследуемую выборку
 // countFrag - число записей в исследуемой выборке
-int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
+int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* similarity)
 {
     _s16* pS;
     _s16* pF;
     int res = 0;
     int i, n;
     // максимумы образца и исследуемого сигналов для нормирования образца
-    _s16 maxS = 0, maxF = 0;
+    _s16 maxS = 0;
+    _s16 maxF = 0;
+    // максимум для корреляционной функции
+    _f64 maxCorr = 0;
     // нормирующий коээфициент
     _f64 norm;
+    // энергетический максимум для образца и фрагмента
+    _f64 EnergyS = 0;
+//    _f64 EnergyF = 0;
 
     assert(countSample >0);
     assert(countFrag >0);
@@ -130,10 +136,13 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
 
 // вычисление нормирующего коэффициента
     for (i=0; i< cntS; i++)
-        if (maxS < fabs(pSample[i])) maxS = fabs(pSample[i]);
+        if (abs(pS[i]) > maxS) maxS = abs(pS[i]);
     for (i=0; i< cntF; i++)
-        if (maxF < fabs(pFrag[i])) maxF = fabs(pFrag[i]);
-    norm = maxS/maxF;
+        if (abs(pF[i]) > maxF) maxF = abs(pF[i]);
+    norm = (_f64)maxS/maxF;
+    printf("Максимум образца: %i\n", maxS);
+    printf("Максимум исследуемого фрагмента: %i\n", maxF);
+    printf("Нормирующий коэффициент: %f\n", norm);
 
  // вычисление корреляционной функции
     for (n=0; n<cntF; n++)
@@ -163,6 +172,18 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag)
         sum = sum + pCorr[i] - pCorr[i-window];
         pFiltered[i] = sum / window;
     }
+
+    // анализ совпадения (временно по максимуму ВКФ)
+    for(i = 0; i < cntS/10; i+=100){
+        EnergyS += pow(pS[i], 2);
+    }
+    printf("Максимум энергетический: %8.1f\n", EnergyS);
+
+    for  (i=0; i<cntF; i++) {
+        if (pCorr[i] > maxCorr) maxCorr = pCorr[i];
+    }
+    printf("Максимум ВКФ: %8.1f\n", maxCorr);
+    *similarity = round(100 * maxCorr / EnergyS);
 
 // запись ВКФ в файл !!! ВРЕМЕННО !!! для визуального анализа
     FILE *fCorr;

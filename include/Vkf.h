@@ -75,7 +75,7 @@ typedef struct
 
 //int wav2array(char* fName, double* pOut);
 int readWav(char* fName, char* wavData);
-int getVKF(char* pSample, int countSample, char* pFrag, int countFrag);
+int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* similarity);
 //int wav2array(char* fName);
 int corrFunc(_s16* in1, _s16* in2, _f64* corr, int records);
 
