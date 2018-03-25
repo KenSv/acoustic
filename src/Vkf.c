@@ -36,9 +36,10 @@ int readWav(char* fName, char* wavData)
 //        free(extraFmt);
 //    }
 //    fread(&dataHeader, sizeof(WAV_DATA_HEADER), 1, file);
-    short t;
-    fread(&t, sizeof(short), 1, file);
-    if (t != 0x6164){
+    int t;
+    fread(&t, sizeof(t), 1, file);
+//    if (t != 0x6164){
+    if (t != DataID){
         printf("Ошибка в заголовке файла!!! Попытка поиска блока данных...\n");
         int cnt = 0;
         int chunkId;
@@ -55,19 +56,19 @@ int readWav(char* fName, char* wavData)
             fread(&dataHeader, sizeof(WAV_DATA_HEADER), 1, file);
         }
     } else {
-        fseek(file, -sizeof(short), SEEK_CUR);
+        fseek(file, -sizeof(t), SEEK_CUR);
         fread(&dataHeader, sizeof(WAV_DATA_HEADER), 1, file);
     }
 
 
     // Выводим полученные данные
     printf("subchunk1Size: %d\n", header.subchunk1Size);
-    printf("subchunk2Id: %s\n", dataHeader.subchunk2Id);
-
     printf("Битрейт: %d\n", header.sampleRate);
     printf("Число каналов: %d\n", header.numChannels);
-    printf("Число бит в одном значении: %d\n", header.bitsPerSample);
-    printf("Размер блока данных (байт): %d\n", dataHeader.subchunk2Size);
+    printf("Число бит в одном значении: %d\n\n", header.bitsPerSample);
+
+//    printf("Идентификатор блока данных: %s\t\n", dataHeader.subchunk2Id);
+    printf("Количество исследуемых данных (байт): %d\n", dataHeader.subchunk2Size);
     printf("==============================================\n\n");
 
 //    short len = header.bitsPerSample >> 3;
@@ -112,6 +113,7 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     // энергетический максимум для образца и фрагмента
     _f64 EnergyS = 0;
 //    _f64 EnergyF = 0;
+    short step = 10; // шаг между анализируемыми точками выборки (для уменьшения времени обработки)
 
     assert(countSample >0);
     assert(countFrag >0);
@@ -138,7 +140,10 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     for (i=0; i< cntS; i++)
         if (abs(pS[i]) > maxS) maxS = abs(pS[i]);
     for (i=0; i< cntF; i++)
-        if (abs(pF[i]) > maxF) maxF = abs(pF[i]);
+//    {
+         if (abs(pF[i]) > maxF) maxF = abs(pF[i]);
+//         printf("%i \t%x int %i\n", i, pF[i], pF[i]);
+//    }
     norm = (_f64)maxS/maxF;
     printf("Максимум образца: %i\n", maxS);
     printf("Максимум исследуемого фрагмента: %i\n", maxF);
@@ -148,7 +153,8 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     for (n=0; n<cntF; n++)
     {
         pCorr[n] = 0.0;
-        for(i = 0; i < cntS/10; i+=100)
+//        for(i = 0; i < cntS/10; i+=100)
+        for(i = 0; i < cntS/10; i+=step)
         {
             if (i+n < cntF)
             {
@@ -174,7 +180,7 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     }
 
     // анализ совпадения (временно по максимуму ВКФ)
-    for(i = 0; i < cntS/10; i+=100){
+    for(i = 0; i < cntS/10; i+=step){
         EnergyS += pow(pS[i], 2);
     }
     printf("Максимум энергетический: %8.1f\n", EnergyS);
