@@ -109,10 +109,10 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     // максимум для корреляционной функции
     _f64 maxCorr = 0;
     // нормирующий коээфициент
-    _f64 norm;
+//    _f64 norm;
     // энергетический максимум для образца и фрагмента
     _f64 EnergyS = 0;
-//    _f64 EnergyF = 0;
+    _f64 EnergyF = 0;
     short step = 10; // шаг между анализируемыми точками выборки (для уменьшения времени обработки)
 
     assert(countSample >0);
@@ -158,37 +158,39 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
         pCorr[n] = 0.0;
 // вариант нормирования по мощности
         // вычисление мощности анализируемого фрагмента
-//        EnergyF = 0;
-//        for(i = 0; i < cntS/10; i+=step) {
-//            if (i+n < cntF)
-//                EnergyF += pow(pF[i+n], 2);
-//                if (abs(pF[i+n]) > maxF) maxF = abs(pF[i+n]);
-//            else
-//                break;
-//        }
+        EnergyF = 0;
+        for(i = 0; i < cntS/10; i+=step) {
+            if (i+n < cntF)
+                EnergyF += pow(pF[i+n], 2);
+            else
+                break;
+        }
 //        // вычисление нормирущего коэффициента
 //        norm = (_f64)EnergyS/EnergyF;
 // вариант нормирования по максимуму локального фрагмента (с которым проводится вычисление ВКФ)
-        maxF = 0;
-        for(i = 0; i < cntS/10; i+=step) {
-            if (i+n < cntF) {
-                if (abs(pF[i+n]) > maxF) maxF = abs(pF[i+n]);
-            } else
-                break;
-        }
-        // вычисление нормирущего коэффициента
-        norm = (_f64)maxS/maxF;
-
-        if (n < 20)
-            printf("нормирующий коэффициент: %f\n", norm);
+//        maxF = 0;
+//        for(i = 0; i < cntS/10; i+=step) {
+//            if (i+n < cntF) {
+//                if (abs(pF[i+n]) > maxF) maxF = abs(pF[i+n]);
+//            } else
+//                break;
+//        }
+//        // вычисление нормирущего коэффициента
+//        norm = (_f64)maxS/maxF;
+//
+//        if (n < 20)
+//            printf("нормирующий коэффициент: %f\n", norm);
         for(i = 0; i < cntS/10; i+=step)
         {
             if (i+n < cntF)
             {
-                pCorr[n] += fabs(norm * pF[n+i] * pS[i]);
+//                pCorr[n] += fabs(norm * pF[n+i] * pS[i]);
+                pCorr[n] += fabs(pF[n+i] * pS[i]);
             } else
                 break;
         }
+// Вариант с нормирование результата ВКФ
+        pCorr[n] = (_f64) pCorr[n] * EnergyS/EnergyF;
     }
 
     // фильтрация
