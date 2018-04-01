@@ -112,7 +112,6 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     _f64 norm;
     // энергетический максимум для образца и фрагмента
     _f64 EnergyS = 0;
-    _f64 EnergyF = 0;
 //    _f64 EnergyF = 0;
     short step = 10; // шаг между анализируемыми точками выборки (для уменьшения времени обработки)
 
@@ -141,10 +140,8 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     for (i=0; i< cntS; i++)
         if (abs(pS[i]) > maxS) maxS = abs(pS[i]);
     for (i=0; i< cntF; i++)
-//    {
          if (abs(pF[i]) > maxF) maxF = abs(pF[i]);
-//         printf("%i \t%x int %i\n", i, pF[i], pF[i]);
-//    }
+
 //    norm = (_f64)maxS/maxF;
     printf("Максимум образца: %i\n", maxS);
     printf("Максимум исследуемого фрагмента: %i\n", maxF);
@@ -159,17 +156,29 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     for (n=0; n<cntF; n++)
     {
         pCorr[n] = 0.0;
-//        for(i = 0; i < cntS/10; i+=100)
+// вариант нормирования по мощности
         // вычисление мощности анализируемого фрагмента
-        EnergyF = 0;
+//        EnergyF = 0;
+//        for(i = 0; i < cntS/10; i+=step) {
+//            if (i+n < cntF)
+//                EnergyF += pow(pF[i+n], 2);
+//                if (abs(pF[i+n]) > maxF) maxF = abs(pF[i+n]);
+//            else
+//                break;
+//        }
+//        // вычисление нормирущего коэффициента
+//        norm = (_f64)EnergyS/EnergyF;
+// вариант нормирования по максимуму локального фрагмента (с которым проводится вычисление ВКФ)
+        maxF = 0;
         for(i = 0; i < cntS/10; i+=step) {
-            if (i+n < cntF)
-                EnergyF += pow(pF[i+n], 2);
-            else
+            if (i+n < cntF) {
+                if (abs(pF[i+n]) > maxF) maxF = abs(pF[i+n]);
+            } else
                 break;
         }
         // вычисление нормирущего коэффициента
-        norm = (_f64)EnergyS/EnergyF;
+        norm = (_f64)maxS/maxF;
+
         if (n < 20)
             printf("нормирующий коэффициент: %f\n", norm);
         for(i = 0; i < cntS/10; i+=step)
