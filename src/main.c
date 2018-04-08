@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
             break;
     }
 
+// закомментировал временно для проверки обработки на простых синтетических сигналах
     printf("Файл образца: ");
     cntSample = readWav((char*) &f_sample, pSample);
     if (cntSample <= 0)
@@ -53,6 +54,16 @@ int main(int argc, char* argv[])
         printf("Ошибка открытия исследуемого файла\n");
         res = -2;
     }
+
+// эмуляция образца и исследуемого сигналов для проверки работы функции ВКФ
+//    cntSample = 1000;
+//    cntFrag = 10000;
+//    int shift = 100;
+//    int ampSample = 32767;
+//    int ampFrag = 1000;
+//    generateSample(pSample, cntSample, ampSample, 0);
+//    generateSample(pFrag, cntFrag, ampFrag, shift);
+
     // собственно подсчет ВКФ
     _s16 result = 0;
     getVKF(pSample, cntSample, pFrag, cntFrag, &result);

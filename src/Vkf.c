@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <errno.h>
+#include <math.h>
 #include "../include/Vkf.h"
 #include "../include/Riq.h"
 
@@ -92,6 +93,25 @@ int readWav(char* fName, char* wavData)
     }
 }
 
+void generateSample(char* pSample, int countSample, int amp, int shift) {
+    int i;
+    _s16* p;
+    p = (_s16*) pSample;
+    int cnt = countSample/sizeof(_s16);
+    double step = 2*M_PI/360;
+    double w = 0;
+    for (i=0; i<shift; i++) {
+        w += step;
+        if (w>2*M_PI) w = 0.;
+    }
+    for (i=0; i<cnt; i++) {
+        p[i] = (_s16)amp * sin(w);
+        w += step;
+        if (w>2*M_PI)
+            w = 0.;
+    }
+}
+
 // вычисление взаимной корреляционной функции
 // pSample - указатель на образцовую выборку
 // countSample - число записей в образцовой выборке
@@ -109,11 +129,12 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     // максимум для корреляционной функции
     _f64 maxCorr = 0;
     // нормирующий коээфициент
-//    _f64 norm;
+    _f64 norm;
     // энергетический максимум для образца и фрагмента
     _f64 EnergyS = 0;
     _f64 EnergyF = 0;
-    short step = 10; // шаг между анализируемыми точками выборки (для уменьшения времени обработки)
+    short step = 1; // шаг между анализируемыми точками выборки (для уменьшения времени обработки)
+    short execPercent = 0;
 
     assert(countSample >0);
     assert(countFrag >0);
@@ -136,30 +157,33 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
     _f64* pCorr = (_f64*)malloc(max_rec*sizeof(_f64));
     printf("Число точек исследуемой выборки: %d\tобразца: %d\n", cntF, cntS);
 
+    int cntSrinked = cntS; //cntS/10;
+
 // вычисление нормирующего коэффициента
     for (i=0; i< cntS; i++)
         if (abs(pS[i]) > maxS) maxS = abs(pS[i]);
     for (i=0; i< cntF; i++)
          if (abs(pF[i]) > maxF) maxF = abs(pF[i]);
 
-//    norm = (_f64)maxS/maxF;
+    norm = (_f64)maxS/maxF;
     printf("Максимум образца: %i\n", maxS);
     printf("Максимум исследуемого фрагмента: %i\n", maxF);
-//    printf("Нормирующий коэффициент: %f\n", norm);
+    printf("Нормирующий коэффициент: %f\n", norm);
 
-    for(i = 0; i < cntS/10; i+=step){
+//    for(i = 0; i < cntS/10; i+=step){
+    for(i = 0; i < cntSrinked; i+=step){
             EnergyS += pow(pS[i], 2);
     }
     printf("Максимум энергетический: %8.1f\n", EnergyS);
-
  // вычисление корреляционной функции
-    for (n=0; n<cntF; n++)
+    for (n=0; n<cntF-cntSrinked; n++)
     {
         pCorr[n] = 0.0;
 // вариант нормирования по мощности
         // вычисление мощности анализируемого фрагмента
         EnergyF = 0;
-        for(i = 0; i < cntS/10; i+=step) {
+//        for(i = 0; i < cntS/10; i+=step) {
+        for(i = 0; i < cntSrinked; i+=step) {
             if (i+n < cntF)
                 EnergyF += pow(pF[i+n], 2);
             else
@@ -169,7 +193,8 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
 //        norm = (_f64)EnergyS/EnergyF;
 // вариант нормирования по максимуму локального фрагмента (с которым проводится вычисление ВКФ)
 //        maxF = 0;
-//        for(i = 0; i < cntS/10; i+=step) {
+////        for(i = 0; i < cntS/10; i+=step) {
+//        for(i = 0; i < cntSrinked; i+=step) {
 //            if (i+n < cntF) {
 //                if (abs(pF[i+n]) > maxF) maxF = abs(pF[i+n]);
 //            } else
@@ -180,33 +205,39 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
 //
 //        if (n < 20)
 //            printf("нормирующий коэффициент: %f\n", norm);
-        for(i = 0; i < cntS/10; i+=step)
+//        for(i = 0; i < cntS/10; i+=step)
+        for(i = 0; i < cntSrinked; i+=step)
         {
             if (i+n < cntF)
             {
-//                pCorr[n] += fabs(norm * pF[n+i] * pS[i]);
-                pCorr[n] += fabs(pF[n+i] * pS[i]);
+                pCorr[n] += fabs(norm * pF[n+i] * pS[i]);
+//                pCorr[n] += fabs(pF[n+i] * pS[i]);
             } else
                 break;
         }
+        if (execPercent < 100*(n+1)/(cntF-cntSrinked)) {
+            execPercent = (short)100*(n+1)/(cntF-cntSrinked);
+            printf("\r%d%%", execPercent);
+            fflush(stdout);
+        }
 // Вариант с нормирование результата ВКФ
-        pCorr[n] = (_f64) pCorr[n] * EnergyS/EnergyF;
+//        pCorr[n] = (_f64) pCorr[n] * EnergyS/EnergyF;
     }
 
     // фильтрация
     _f64* pFiltered = (_f64*) malloc(sizeof(_f64)*cntF);
-    short window = 100;
-    _f64 sum = 0;
-    for (i=0; i<window; i++)
-    {
-        sum += pCorr[i];
-        pFiltered[i] = sum / (i + 1);
-    }
-    for (i=window; i<cntF; i++)
-    {
-        sum = sum + pCorr[i] - pCorr[i-window];
-        pFiltered[i] = sum / window;
-    }
+//    short window = 100;
+//    _f64 sum = 0;
+//    for (i=0; i<window; i++)
+//    {
+//        sum += pCorr[i];
+//        pFiltered[i] = sum / (i + 1);
+//    }
+//    for (i=window; i<cntF; i++)
+//    {
+//        sum = sum + pCorr[i] - pCorr[i-window];
+//        pFiltered[i] = sum / window;
+//    }
 
     // анализ совпадения (временно по максимуму ВКФ)
 
@@ -219,8 +250,8 @@ int getVKF(char* pSample, int countSample, char* pFrag, int countFrag, _s16* sim
 // запись ВКФ в файл !!! ВРЕМЕННО !!! для визуального анализа
     FILE *fCorr;
     fCorr = fopen("icf.dat", "w");
-    //fwrite(pCorr, sizeof(_f64), cntF, fCorr);
-    fwrite(pFiltered, sizeof(_f64), cntF, fCorr);
+    fwrite(pCorr, sizeof(_f64), cntF, fCorr);
+//    fwrite(pFiltered, sizeof(_f64), cntF, fCorr);
     fclose(fCorr);
     free(pCorr);
     free(pFiltered);
